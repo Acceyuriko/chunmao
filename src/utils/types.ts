@@ -27,4 +27,5 @@ export interface Message {
   anonymous: null;
   font: number;
   raw_message: string;
+  notice_type: 'group_increase' | 'group_decrease';
 }

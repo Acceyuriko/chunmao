@@ -11,13 +11,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.post('/notify', async (req, res) => {
-  const message = req.body as Message;
-  if (message.post_type !== 'message') {
-    res.send(null);
-    return;
-  }
   try {
-    res.json(await MessageService.handle(message));
+    res.json(await MessageService.handle(req.body as Message));
   } catch (e) {
     res.status(500).send(`Something broke! ${(e as Error).message}`);
   }
