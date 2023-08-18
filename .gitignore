@@ -131,3 +131,5 @@ dist
 
 go-cqhttp/*
 src/config.ts
+
+*.sqlite

@@ -1,0 +1,6 @@
+{
+  "development": {
+    "storage": "./chunmao.sqlite",
+    "dialect": "sqlite"
+  }
+}
