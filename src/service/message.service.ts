@@ -1,15 +1,15 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import fs from 'fs';
 import mime from 'mime';
 import path from 'path';
 import { Op } from 'sequelize';
 
 import { CONFIG } from '../config';
-import { Msg } from '../db';
+import { Msg, RankInfo } from '../db';
+import { hash } from '../utils';
 import { STAR_FORCE_AFTER_16 } from '../utils/constant';
-import { hash } from '../utils/hash';
 import { logger } from '../utils/logger';
-import { Message } from '../utils/types';
+import { Message, UserDetail } from '../utils/types';
 import { drawService } from './draw.service';
 
 export class MessageService {
@@ -132,13 +132,50 @@ export class MessageService {
   }
 
   private async onLegionQuery(message: Message): Promise<string> {
-    console.log(message);
-    return '';
+    let name = message.raw_message.slice(4).trim();
+    if (name === '') {
+      const rank = await RankInfo.findOne({ where: { user_id: message.user_id } });
+      if (!rank) {
+        return `请先绑定角色\r\n` + `例如： 查询绑定JulyMeowMeow`;
+      }
+      name = rank.user_name;
+    } else if (name.includes('[CQ:at,qq=')) {
+      const match = name.match(/\[CQ:at,qq=(.*?)]/);
+      const rank = await RankInfo.findOne({ where: { user_id: match![1] } });
+      if (!rank) {
+        return `请先绑定角色\r\n` + `例如： 查询绑定JulyMeowMeow`;
+      }
+      name = rank.user_name;
+    }
+    try {
+      const detail: UserDetail = (
+        await axios.get(`https://api.maplestory.gg/v1/public/character/gms/${name}`, {
+          headers: {
+            'User-Agent': 'Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)',
+          },
+        })
+      ).data;
+      return drawService.drawLegion(detail);
+    } catch (e) {
+      if (e instanceof AxiosError) {
+        if (e.status === 404) {
+          return '查询角色不存在';
+        }
+      }
+      return '查询失败';
+    }
   }
 
   private async onQueryBind(message: Message): Promise<string> {
-    console.log(message);
-    return '';
+    const name = message.raw_message.slice(4).trim();
+    if (name === '') {
+      return '笨蛋，你得告诉我绑定的角色名啊';
+    }
+    await RankInfo.upsert({
+      user_id: message.user_id,
+      user_name: name,
+    });
+    return '绑定成功';
   }
 
   private async onLearnQuestion(message: Message) {

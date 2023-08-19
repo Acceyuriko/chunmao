@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      html,
+      body {
+        position: relative;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1102px;
+        height: 674px;
+        overflow: hidden;
+      }
+      .background > * {
+        position: absolute;
+      }
+      .hills {
+        bottom: -37px;
+      }
+      .flooring {
+        bottom: 0;
+        width: 100%;
+        height: 235px;
+        background-image: url('./flooring.png');
+        background-repeat: repeat-x;
+      }
+      .house {
+        bottom: 225px;
+      }
+      .mountains {
+        bottom: 260px;
+        width: 100%;
+        height: 235px;
+        background-image: url('./mountains.png');
+        background-repeat: repeat-x;
+      }
+      .clouds {
+        width: 100%;
+        height: 200px;
+        background-image: url('./clouds.png');
+        background-repeat: repeat-x;
+        top: 0;
+      }
+      .container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 1102px;
+        height: 674px;
+      }
+      .wrapper {
+        padding: 24px;
+        display: flex;
+        gap: 24px;
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 48px;
+        box-shadow: 2px 2px 8px 8px rgba(255, 255, 255, 0.8);
+      }
+      .left {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: space-around;
+      }
+      .left > .line {
+        padding: 8px;
+        font-size: 24px;
+        line-height: 32px;
+        font-weight: bold;
+      }
+
+      .right {
+        flex-shrink: 0;
+        margin-right: 24px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border-radius: 40px;
+      }
+      .right > img {
+        width: 360px;
+        height: 360px;
+      }
+      .right > .name {
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+        color: black;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="background">
+      <div class="clouds"></div>
+      <div class="mountains"></div>
+      <img class="hills" src="./hills.png" />
+      <div class="flooring"></div>
+      <img class="house" src="./house.webp" />
+    </div>
+    <div class="container">
+      <div class="wrapper">
+        <div class="left">
+          <div class="line line1">服务器: Elysium</div>
+          <div class="line line2">等级: 271 - 30.04% (排名527)</div>
+          <div class="line line3">职业: Night Lord (排名66)</div>
+          <div class="line line4">联盟等级: 6900</div>
+          <div class="line line5">联盟战斗力: 123123123 (每天 137 币)</div>
+          <div class="line line6">昨日exp: 400b, 7天平均exp: 400b</div>
+          <div class="line line7">按照最近1天的进度，还需要 74 天到达 275 级</div>
+          <div class="line line8">按照最近7天的进度，还需要 74 天到达 275 级</div>
+        </div>
+        <div class="right">
+          <img />
+          <div class="name">JulyMeowMeow</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

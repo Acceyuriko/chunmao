@@ -31,3 +31,40 @@ export interface Message {
   notice_type: 'group_increase' | 'group_decrease';
   sub_type: 'approve' | 'invite' | 'normal';
 }
+
+export interface UserDetail {
+  AchievementPoints: number;
+  AchievementRank: number;
+  CharacterImageURL: string;
+  Class: string;
+  ClassRank: number;
+  EXP: number;
+  EXPPercent: number;
+  GlobalRanking: number;
+  GraphData?: {
+    AvatarURL: string;
+    ClassID: number;
+    ClassRankGroupID: number;
+    CurrentEXP: number;
+    DateLabel: string; // '2023-08-03';
+    EXPDifference: number;
+    EXPToNextLevel: number;
+    ImportTime: number;
+    Level: number;
+    Name: string;
+    ServerID: number;
+    ServerMergeID: number;
+    TotalOverallEXP: number;
+  }[];
+  Guild: string;
+  LegionCoinsPerDay?: number;
+  LegionLevel: number;
+  LegionPower: number;
+  LegionRank: number;
+  Level: number;
+  Name: string;
+  Server: string;
+  ServerClassRanking: number;
+  ServerRank: number;
+  ServerSlug: string;
+}
