@@ -15,7 +15,7 @@ module.exports = {
       question: {
         type: Sequelize.STRING,
       },
-      create_id: {
+      createId: {
         type: Sequelize.STRING,
       },
       link: {

@@ -2,7 +2,9 @@ import express, { NextFunction, Request, Response } from 'express';
 
 import { CONFIG } from './config';
 import { db } from './db';
+import { cqService } from './service/cq.service';
 import { messageService } from './service/message.service';
+import { taskService } from './service/task.service';
 import { logger } from './utils/logger';
 import { Message } from './utils/types';
 
@@ -16,8 +18,7 @@ app.post('/notify', async (req, res) => {
     const message = req.body as Message;
     const text = await messageService.handle(message);
     if (text) {
-      console.log(text);
-      // await axios.post(`http://localhost:5700/send_group_msg`, msg);
+      await cqService.sendGroupMessage(message.group_id, text);
     }
     res.json({ message: text });
   } catch (e) {
@@ -33,5 +34,6 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 
 app.listen(CONFIG.port, async () => {
   await db.authenticate();
+  taskService.run();
   logger.info(`Server is running on port ${CONFIG.port}`);
 });

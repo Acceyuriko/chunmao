@@ -1,16 +1,18 @@
 import axios, { AxiosError } from 'axios';
 import fs from 'fs';
+import { difference } from 'lodash';
 import mime from 'mime';
 import path from 'path';
 import { Op } from 'sequelize';
 
 import { CONFIG } from '../config';
-import { Msg, RankInfo } from '../db';
+import { Msg, MsgNoPrefix, RankInfo, RereadMsg, RereadUser } from '../db';
 import { hash } from '../utils';
 import { STAR_FORCE_AFTER_16 } from '../utils/constant';
 import { logger } from '../utils/logger';
 import { Message, UserDetail } from '../utils/types';
 import { drawService } from './draw.service';
+import { taskService } from './task.service';
 
 export class MessageService {
   public async handle(message: Message): Promise<string> {
@@ -63,7 +65,7 @@ export class MessageService {
     if (message.raw_message.startsWith('查询绑定')) {
       return this.onQueryBind(message);
     }
-    return '';
+    return (await this.onMsgNoPrefix(message)) || (await this.onReread(message));
   }
 
   private async onWelcome(message: Message): Promise<string> {
@@ -126,6 +128,10 @@ export class MessageService {
       return this.onStarForce(message);
     }
 
+    if (/^复读机周报/.test(message.raw_message)) {
+      return this.onRereadWeekly(message);
+    }
+
     // TODO: 占卜
     // TODO: 算术
     return this.onOther(message);
@@ -134,18 +140,18 @@ export class MessageService {
   private async onLegionQuery(message: Message): Promise<string> {
     let name = message.raw_message.slice(4).trim();
     if (name === '') {
-      const rank = await RankInfo.findOne({ where: { user_id: message.user_id } });
+      const rank = await RankInfo.findOne({ where: { userId: message.user_id } });
       if (!rank) {
         return `请先绑定角色\r\n` + `例如： 查询绑定JulyMeowMeow`;
       }
-      name = rank.user_name;
+      name = rank.userName;
     } else if (name.includes('[CQ:at,qq=')) {
       const match = name.match(/\[CQ:at,qq=(.*?)]/);
-      const rank = await RankInfo.findOne({ where: { user_id: match![1] } });
+      const rank = await RankInfo.findOne({ where: { userId: match![1] } });
       if (!rank) {
         return `请先绑定角色\r\n` + `例如： 查询绑定JulyMeowMeow`;
       }
-      name = rank.user_name;
+      name = rank.userName;
     }
     try {
       const detail: UserDetail = (
@@ -172,8 +178,8 @@ export class MessageService {
       return '笨蛋，你得告诉我绑定的角色名啊';
     }
     await RankInfo.upsert({
-      user_id: message.user_id,
-      user_name: name,
+      userId: message.user_id,
+      userName: name,
     });
     return '绑定成功';
   }
@@ -193,7 +199,7 @@ export class MessageService {
         answer = answer.replace(match, imageName);
       }
     }
-    await Msg.create({ question, answer, create_id: message.user_id });
+    await Msg.create({ question, answer, createId: message.user_id });
     return '[CQ:image,file=img/record.gif]';
   }
 
@@ -289,6 +295,11 @@ export class MessageService {
     return `${level} 级装备 ${star} 星的加成为： 主属 ${totalStat}, 攻击 ${totalAtt}`;
   }
 
+  private async onRereadWeekly(message: Message): Promise<string> {
+    const weekly = await taskService.generateRereadWeekly();
+    return weekly.find((i) => i.groupId === message.group_id)?.text || '';
+  }
+
   private async onOther(message: Message) {
     const questions = await Msg.findAll({ where: { question: { [Op.like]: `%${message.raw_message.trim()}%` } } });
     if (questions.length === 0) {
@@ -296,6 +307,91 @@ export class MessageService {
       return `[CQ:image,file=img/buzhidao${answers[Math.floor(Math.random() * answers.length)]}]`;
     }
     return questions[Math.floor(Math.random() * questions.length)].answer;
+  }
+
+  private async onMsgNoPrefix(message: Message) {
+    const questions = (await MsgNoPrefix.findAll()).filter((i) => message.raw_message.includes(i.question));
+    const exact = questions.find((i) => i.exact && i.question === message.raw_message);
+    if (exact) {
+      return exact.answer;
+    }
+    if (questions.length > 0) {
+      return questions[Math.floor(Math.random() * questions.length)].answer;
+    }
+    return '';
+  }
+
+  private async onReread(message: Message) {
+    const messages = this.rereadMessage[message.group_id] || [];
+    const newItem = {
+      messageId: message.message_id,
+      content: message.raw_message,
+      userId: message.user_id,
+      createdAt: Date.now(),
+    };
+    if (messages.length === 0) {
+      this.rereadMessage[message.group_id] = [newItem];
+      return '';
+    }
+    let isBreakReread = false;
+    const last = messages[messages.length - 1];
+    if (Date.now() - last.createdAt > 60 * 1000) {
+      isBreakReread = true;
+    } else if (last.content.includes('[CQ:image,file=')) {
+      if (message.raw_message.includes('[CQ:image,file=')) {
+        const regexp = /\[CQ:image,file=(.+?\.image)/;
+        const match1 = last.content.match(regexp);
+        const match2 = message.raw_message.match(regexp);
+        isBreakReread = match1?.[1] !== match2?.[1];
+      } else {
+        isBreakReread = true;
+      }
+    } else {
+      isBreakReread = last.content !== message.raw_message;
+    }
+
+    if (isBreakReread) {
+      if (messages.length >= 2) {
+        await RereadMsg.create({
+          groupId: message.group_id.toFixed(0),
+          messageId: messages[0].messageId.toFixed(0),
+          content: messages[0].content,
+          creator: messages[0].userId.toFixed(0),
+          count: messages.length - 1,
+        });
+        const userIds = messages.slice(1).map((i) => i.userId);
+        const records = await RereadUser.findAll({ where: { userId: userIds } });
+        const needToCreate = difference(
+          userIds.map((i) => i.toString()),
+          records.map((i) => i.userId),
+        );
+        if (needToCreate.length > 0) {
+          await RereadUser.bulkCreate(
+            needToCreate.map((i) => ({
+              groupId: message.group_id,
+              userId: i,
+              count: 0,
+            })),
+          );
+        }
+        await RereadUser.increment('count', {
+          by: 1,
+          where: { groupId: message.group_id, userId: userIds },
+        });
+      }
+      this.rereadMessage[message.group_id] = [newItem];
+      return '';
+    }
+
+    if (!messages.find((i) => i.userId === message.user_id)) {
+      messages.push(newItem);
+      this.rereadMessage[message.group_id] = messages;
+      if (messages.length === 3) {
+        return message.raw_message;
+      }
+    }
+
+    return '';
   }
 
   private async permissionDenied() {
@@ -319,6 +415,8 @@ export class MessageService {
   }
 
   private recentMessage: number[] = [];
+  private rereadMessage: Record<string, { messageId: number; content: string; userId: number; createdAt: number }[]> =
+    {};
 }
 
 export const messageService = new MessageService();

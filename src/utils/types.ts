@@ -68,3 +68,22 @@ export interface UserDetail {
   ServerRank: number;
   ServerSlug: string;
 }
+
+export interface GroupMember {
+  group_id: number; //群号
+  user_id: number; //	QQ 号
+  nickname: string; //	昵称
+  card: string; //	群名片／备注
+  sex: string; //	性别, male 或 female 或 unknown
+  age: number; //年龄
+  area: string; //	地区
+  join_time: number; // 加群时间戳
+  last_sent_time: number; // 最后发言时间戳
+  level: string; //	成员等级
+  role: string; //	角色, owner 或 admin 或 member
+  unfriendly: boolean; //	是否不良记录成员
+  title: string; //	专属头衔
+  title_expire_time: number; // 专属头衔过期时间戳
+  card_changeable: boolean; //	是否允许修改群名片
+  shut_up_timestamp: number; //禁言到期时间
+}

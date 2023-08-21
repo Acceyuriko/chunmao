@@ -7,10 +7,10 @@ class MsgNoPrefix extends Model {
   @Column({ primaryKey: true, autoIncrement: true })
   declare id: number;
 
-  @Column(DataType.TEXT)
+  @Column(DataType.STRING)
   declare answer: string;
 
-  @Column(DataType.TEXT)
+  @Column(DataType.STRING)
   declare question: string;
 
   @Column(DataType.BOOLEAN)

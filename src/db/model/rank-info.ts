@@ -8,13 +8,13 @@ class RankInfo extends Model {
   declare id: number;
 
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.STRING,
     unique: true,
   })
-  declare user_id: string;
+  declare userId: string;
 
-  @Column(DataType.TEXT)
-  declare user_name: string;
+  @Column(DataType.STRING)
+  declare userName: string;
 }
 
 export { RankInfo };
