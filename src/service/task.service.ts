@@ -1,13 +1,14 @@
 import dayjs from 'dayjs';
 import { groupBy, keyBy, maxBy } from 'lodash';
 
-import { RereadMsg, RereadUser } from '../db';
+import { Car, RereadMsg, RereadUser } from '../db';
 import { logger } from '../utils/logger';
 import { cqService } from './cq.service';
 
 export class TaskService {
   public run() {
     this.scheduleRereadWeekly();
+    this.scheduleDaily();
   }
 
   public async generateRereadWeekly() {
@@ -30,7 +31,7 @@ export class TaskService {
       result.push({
         groupId: parseInt(group),
         text:
-          `本周最长的复读长袭是：\n` +
+          `本周最长的复读长龙是：\n` +
           `${max.content}\n` +
           `此金句出自——${getName(max.creator)}\n` +
           `当时被复读机们连续复读了${max.count}次!\n` +
@@ -60,7 +61,38 @@ export class TaskService {
         .finally(() => {
           this.scheduleRereadWeekly();
         });
-    }, dayjs().endOf('week').valueOf() - Date.now());
+    }, dayjs().endOf('isoWeek').valueOf() - Date.now());
+  }
+
+  private scheduleDaily() {
+    let resetTime = dayjs().hour(8).startOf('hour');
+    if (resetTime.valueOf() < Date.now()) {
+      resetTime = resetTime.add(1, 'day');
+    }
+    setTimeout(() => {
+      Promise.resolve()
+        .then(async () => {
+          await Car.update({ finished: '' }, { where: { cycle: 'day' } });
+          const day = dayjs().day();
+          const date = dayjs().date();
+          if (day === 1) {
+            await Car.update({ finished: '' }, { where: { cycle: 'weekday1' } });
+          } else if (day === 3) {
+            await Car.update({ finished: '' }, { where: { cycle: 'weekday3' } });
+          } else if (day === 4) {
+            await Car.update({ finished: '' }, { where: { cycle: 'weekday4' } });
+          }
+          if (date === 1) {
+            await Car.update({ finished: '' }, { where: { cycle: 'month' } });
+          }
+        })
+        .catch((e) => {
+          logger.error(`failed to scheduleDaily. ${(e as Error).stack || JSON.stringify(e)}`);
+        })
+        .finally(() => {
+          this.scheduleDaily();
+        });
+    }, resetTime.valueOf() - Date.now());
   }
 }
 

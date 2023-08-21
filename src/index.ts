@@ -1,3 +1,5 @@
+import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
 import express, { NextFunction, Request, Response } from 'express';
 
 import { CONFIG } from './config';
@@ -7,6 +9,8 @@ import { messageService } from './service/message.service';
 import { taskService } from './service/task.service';
 import { logger } from './utils/logger';
 import { Message } from './utils/types';
+
+dayjs.extend(isoWeek);
 
 const app = express();
 

@@ -1,12 +1,12 @@
 import axios, { AxiosError } from 'axios';
 import fs from 'fs';
-import { difference } from 'lodash';
+import { difference, uniq } from 'lodash';
 import mime from 'mime';
 import path from 'path';
 import { Op } from 'sequelize';
 
 import { CONFIG } from '../config';
-import { Msg, MsgNoPrefix, RankInfo, RereadMsg, RereadUser } from '../db';
+import { Car, db, Msg, MsgNoPrefix, RankInfo, RereadMsg, RereadUser } from '../db';
 import { hash } from '../utils';
 import { STAR_FORCE_AFTER_16 } from '../utils/constant';
 import { logger } from '../utils/logger';
@@ -130,6 +130,9 @@ export class MessageService {
 
     if (/^复读机周报/.test(message.raw_message)) {
       return this.onRereadWeekly(message);
+    }
+    if (/^(车车?|叫车|发车|到站|下车)/.test(message.raw_message)) {
+      return this.onCar(message);
     }
 
     // TODO: 占卜
@@ -298,6 +301,97 @@ export class MessageService {
   private async onRereadWeekly(message: Message): Promise<string> {
     const weekly = await taskService.generateRereadWeekly();
     return weekly.find((i) => i.groupId === message.group_id)?.text || '';
+  }
+
+  private async onCar(message: Message): Promise<string> {
+    const cars = (await Car.findAll()).map((i) => i.name);
+    if (/^车车?/.test(message.raw_message)) {
+      return (
+        `欢迎使用蠢猫打车😊\n` +
+        `目前支持以下指令：\n` +
+        `蠢猫叫车[车牌]: 开始等车，有大佬发车时会收到艾特\n` +
+        `蠢猫发车[车牌]: 大佬发车，蠢猫会艾特所有叫车的同学\n` +
+        `蠢猫下车[车牌]: 你已经是大佬了，不用再叫车了\n` +
+        `蠢猫到站[车牌]: 这个周期内已经上过车了，本周期内其他大佬的车车不会再艾特你\n\n` +
+        `目前的车车有 ${cars.join(', ')}`
+      );
+    }
+    if (/^叫车/.test(message.raw_message)) {
+      const name = message.raw_message.slice(2).trim();
+      if (!cars.includes(name)) {
+        return `[CQ:at,qq=${message.user_id}]笨蛋叫错车了，目前的车车有 ${cars.join(', ')}`;
+      }
+      db.transaction(async () => {
+        const record = (await Car.findOne({ where: { name } }))!;
+        const waitings = record.waiting.split(',').filter(Boolean);
+        const finished = record.finished.split(',').filter(Boolean);
+        console.log({
+          waitings: uniq([...waitings, message.user_id.toString()]).join(','),
+          finished: finished.filter((i) => i !== message.user_id.toString()).join(','),
+        });
+
+        await Car.update(
+          {
+            waiting: uniq([...waitings, message.user_id.toString()]).join(','),
+            finished: finished.filter((i) => i !== message.user_id.toString()).join(','),
+          },
+          { where: { name } },
+        );
+      });
+      return `[CQ:at,qq=${message.user_id}]系统已为您派单，请等待车主接单`;
+    }
+    if (/^发车/.test(message.raw_message)) {
+      const name = message.raw_message.slice(2).trim();
+      if (!cars.includes(name)) {
+        return `[CQ:at,qq=${message.user_id}]笨蛋发错车了，目前的车车有 ${cars.join(', ')}`;
+      }
+      const record = (await Car.findOne({ where: { name } }))!;
+      const waitings = difference(
+        record.waiting.split(',').filter(Boolean),
+        record.finished.split(',').filter(Boolean),
+      );
+      if (waitings.length === 0) {
+        return `[CQ:at,qq=${message.user_id}]马萨卡,暂时没有乘客`;
+      }
+      return waitings.map((i) => `[CQ:at,qq=${i}]`).join(' ') + '\n' + `活捉老司机，没时间解释了，快上车!`;
+    }
+    if (/^到站/.test(message.raw_message)) {
+      const name = message.raw_message.slice(2).trim();
+      if (!cars.includes(name)) {
+        return `[CQ:at,qq=${message.user_id}]笨蛋下错站了，目前的车车有 ${cars.join(', ')}`;
+      }
+      db.transaction(async () => {
+        const record = (await Car.findOne({ where: { name } }))!;
+        const finished = record.finished.split(',').filter(Boolean);
+        await Car.update(
+          {
+            finished: uniq([...finished, message.user_id.toString()]).join(','),
+          },
+          { where: { name } },
+        );
+      });
+      return `[CQ:at,qq=${message.user_id}]本次旅程已结束，请带好手机、提包等随身物品，欢迎下次光临~`;
+    }
+    if (/^下车/.test(message.raw_message)) {
+      const name = message.raw_message.slice(2).trim();
+      if (!cars.includes(name)) {
+        return `[CQ:at,qq=${message.user_id}]笨蛋下错车了，目前的车车有 ${cars.join(', ')}`;
+      }
+      db.transaction(async () => {
+        const record = (await Car.findOne({ where: { name } }))!;
+        const waitings = record.waiting.split(',').filter(Boolean);
+        const finished = record.finished.split(',').filter(Boolean);
+        await Car.update(
+          {
+            waiting: waitings.filter((i) => i !== message.user_id.toString()).join(','),
+            finished: finished.filter((i) => i !== message.user_id.toString()).join(','),
+          },
+          { where: { name } },
+        );
+      });
+      return `[CQ:at,qq=${message.user_id}]你已经是新的司机啦，快和萌新打个招呼吧~`;
+    }
+    return '';
   }
 
   private async onOther(message: Message) {
