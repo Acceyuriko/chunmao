@@ -76,6 +76,7 @@ export class DrawService {
     const nextExp = getNextExp(nextLevel) - (gd[0].TotalOverallEXP || 0);
 
     const params = {
+      name: detail.Name,
       src: detail.CharacterImageURL,
       line1: `服务器: ${detail.Server}`,
       line2: `等级: ${detail.Level} - ${detail.EXPPercent}% (排名${detail.ServerRank})`,
@@ -102,6 +103,7 @@ export class DrawService {
       document.querySelector('.line.line6')!.textContent = params.line6;
       document.querySelector('.line.line7')!.textContent = params.line7;
       document.querySelector('.line.line8')!.textContent = params.line8;
+      document.querySelector('.right .name')!.textContent = params.name;
 
       await new Promise<void>((resolve, reject) => {
         img.onload = () => {

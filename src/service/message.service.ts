@@ -325,10 +325,6 @@ export class MessageService {
         const record = (await Car.findOne({ where: { name } }))!;
         const waitings = record.waiting.split(',').filter(Boolean);
         const finished = record.finished.split(',').filter(Boolean);
-        console.log({
-          waitings: uniq([...waitings, message.user_id.toString()]).join(','),
-          finished: finished.filter((i) => i !== message.user_id.toString()).join(','),
-        });
 
         await Car.update(
           {
