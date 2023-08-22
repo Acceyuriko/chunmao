@@ -52,8 +52,8 @@ export class TaskService {
       this.generateRereadWeekly()
         .then(async (result) => {
           await Promise.all(result.map((i) => cqService.sendGroupMessage(i.groupId, i.text)));
-          // await RereadMsg.destroy();
-          // await RereadUser.destroy();
+          await RereadMsg.truncate();
+          await RereadUser.truncate();
         })
         .catch((e) => {
           logger.error(`failed to scheduleRereadWeekly. ${(e as Error).stack || JSON.stringify(e)}`);
