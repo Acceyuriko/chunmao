@@ -167,7 +167,7 @@ export class MessageService {
       return drawService.drawLegion(detail);
     } catch (e) {
       if (e instanceof AxiosError) {
-        if (e.status === 404) {
+        if (e.response?.status === 404) {
           return '查询角色不存在';
         }
       }

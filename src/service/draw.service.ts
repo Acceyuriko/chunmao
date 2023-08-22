@@ -69,11 +69,11 @@ export class DrawService {
     let lastDayExp = 0;
     let lastWeekExpPerDay = 0;
     if (gd.length > 0) {
-      lastDayExp = gd[1].EXPDifference;
+      lastDayExp = gd[1]?.EXPDifference || 0;
       lastWeekExpPerDay = meanBy(gd.slice(1, 8), 'EXPDifference');
     }
     const nextLevel = getNextLevel(detail.Level);
-    const nextExp = getNextExp(nextLevel) - (gd[0].TotalOverallEXP || 0);
+    const nextExp = getNextExp(nextLevel) - (gd[0]?.TotalOverallEXP || 0);
 
     const params = {
       name: detail.Name,
@@ -124,6 +124,9 @@ export class DrawService {
   }
 
   private formatExp(exp: number) {
+    if (isNaN(exp)) {
+      return '0';
+    }
     if (exp < 1000) {
       return exp.toString();
     }
