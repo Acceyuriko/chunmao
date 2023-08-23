@@ -63,6 +63,38 @@ module.exports = {
             name: '老黑',
             cycle: 'month',
           },
+          {
+            name: '黄垃圾',
+            cycle: 'weekday1',
+          },
+          {
+            name: '紫垃圾',
+            cycle: 'weekday1',
+          },
+          {
+            name: '附加垃圾',
+            cycle: 'weekday1',
+          },
+          {
+            name: '黑垃圾',
+            cycle: 'weekday1',
+          },
+          {
+            name: '红垃圾',
+            cycle: 'weekday1',
+          },
+          {
+            name: 'ab',
+            cycle: 'weekday1',
+          },
+          {
+            name: 'au武器',
+            cycle: 'weekday1',
+          },
+          {
+            name: 'au护甲',
+            cycle: 'weekday1',
+          },
         ].map((i) => ({
           ...i,
           createdAt: now,
