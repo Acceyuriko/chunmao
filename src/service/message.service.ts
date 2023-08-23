@@ -440,7 +440,7 @@ export class MessageService {
     }
     let isBreakReread = false;
     const last = messages[messages.length - 1];
-    if (Date.now() - last.createdAt > 60 * 1000) {
+    if (Date.now() - last.createdAt > 5 * 60 * 1000) {
       isBreakReread = true;
     } else if (last.content.includes('[CQ:image,file=')) {
       if (message.raw_message.includes('[CQ:image,file=')) {
