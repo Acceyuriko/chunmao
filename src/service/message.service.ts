@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios';
+import leven from 'fast-levenshtein';
 import fs from 'fs';
 import { difference, uniq } from 'lodash';
 import mime from 'mime';
@@ -396,11 +397,9 @@ export class MessageService {
       const answers = ['1.gif', '2.gif', '3.png', '4.png', '5.png'];
       return `[CQ:image,file=img/buzhidao${answers[Math.floor(Math.random() * answers.length)]}]`;
     }
-    const { default: leven } = await import('leven'); // fix: to import esmodule
-
     const { answers } = questions.reduce(
       (pre, cur) => {
-        const distance = leven(message.raw_message, cur.question);
+        const distance = leven.get(message.raw_message, cur.question);
         if (distance < pre.distance) {
           return { distance, answers: [cur.answer] };
         }

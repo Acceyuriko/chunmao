@@ -17,9 +17,9 @@ dependencies:
   express:
     specifier: ^4.18.2
     version: 4.18.2
-  leven:
-    specifier: ^4.0.0
-    version: 4.0.0
+  fast-levenshtein:
+    specifier: ^3.0.0
+    version: 3.0.0
   lodash:
     specifier: ^4.17.21
     version: 4.17.21
@@ -55,6 +55,9 @@ devDependencies:
   '@types/express':
     specifier: ^4.17.17
     version: 4.17.17
+  '@types/fast-levenshtein':
+    specifier: ^0.0.2
+    version: 0.0.2
   '@types/lodash':
     specifier: ^4.14.197
     version: 4.14.197
@@ -364,6 +367,10 @@ packages:
       '@types/express-serve-static-core': 4.17.35
       '@types/qs': 6.9.7
       '@types/serve-static': 1.15.1
+    dev: true
+
+  /@types/fast-levenshtein@0.0.2:
+    resolution: {integrity: sha512-h9AGeNlFimLtFUlEZgk+hb3LUT4tNHu8y0jzCUeTdi1BM4e86sBQs/nQYgHk70ksNyNbuLwpymFAXkb0GAehmw==}
     dev: true
 
   /@types/json-schema@7.0.12:
@@ -1591,6 +1598,17 @@ packages:
     resolution: {integrity: sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw==}
     dev: true
 
+  /fast-levenshtein@3.0.0:
+    resolution: {integrity: sha512-hKKNajm46uNmTlhHSyZkmToAc56uZJwYq7yrciZjqOxnlfQwERDQJmHPUp7m1m9wx8vgOe8IaCKZ5Kv2k1DdCQ==}
+    dependencies:
+      fastest-levenshtein: 1.0.16
+    dev: false
+
+  /fastest-levenshtein@1.0.16:
+    resolution: {integrity: sha512-eRnCtTTtGZFpQCwhJiUOuxPQWRXVKYDn0b2PeHfXL6/Zi53SLAzAHfVhVWK2AryC/WH05kGfxhFIPvTF0SXQzg==}
+    engines: {node: '>= 4.9.1'}
+    dev: false
+
   /fastq@1.15.0:
     resolution: {integrity: sha512-wBrocU2LCXXa+lWBt8RoIRD89Fi8OdABODa/kEnyeyjS5aZO5/GNvI5sEINADqP/h8M29UHTHUb53sUu5Ihqdw==}
     dependencies:
@@ -2170,11 +2188,6 @@ packages:
 
   /kuler@2.0.0:
     resolution: {integrity: sha512-Xq9nH7KlWZmXAtodXDDRE7vs6DU1gTU8zYDHDiWLSip45Egwq3plLHzPn27NgvzL2r1LMPC1vdqh98sQxtqj4A==}
-    dev: false
-
-  /leven@4.0.0:
-    resolution: {integrity: sha512-puehA3YKku3osqPlNuzGDUHq8WpwXupUg1V6NXdV38G+gr+gkBwFC8g1b/+YcIvp8gnqVIus+eJCH/eGsRmJNw==}
-    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
     dev: false
 
   /levn@0.4.1:
