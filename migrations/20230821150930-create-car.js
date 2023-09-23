@@ -95,6 +95,10 @@ module.exports = {
             name: 'au护甲',
             cycle: 'weekday1',
           },
+          {
+            name: '轮子',
+            cycle: 'weekday1',
+          },
         ].map((i) => ({
           ...i,
           createdAt: now,

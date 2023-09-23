@@ -508,7 +508,7 @@ export class MessageService {
     const res = await axios.get(url, { responseType: 'arraybuffer' });
     const buffer: Buffer = res.data;
     const filename = hash(buffer) + '.' + mime.getExtension(res.headers['content-type']);
-    await fs.promises.writeFile(path.resolve(CONFIG.imageUrl, filename), buffer);
+    await fs.promises.writeFile(path.resolve(CONFIG.imageUrl, 'save', filename), buffer);
     return filename;
   }
 
