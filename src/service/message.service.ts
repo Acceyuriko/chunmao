@@ -2,13 +2,11 @@ import axios, { AxiosError } from 'axios';
 import leven from 'fast-levenshtein';
 import fs from 'fs';
 import { difference, uniq } from 'lodash';
-import mime from 'mime';
 import path from 'path';
 import { Op } from 'sequelize';
 
 import { CONFIG } from '../config';
 import { Car, db, Msg, MsgNoPrefix, RankInfo, RereadMsg, RereadUser } from '../db';
-import { hash } from '../utils';
 import { STAR_FORCE_AFTER_16 } from '../utils/constant';
 import { logger } from '../utils/logger';
 import { Message, UserDetail } from '../utils/types';
@@ -36,7 +34,7 @@ export class MessageService {
       return this.onWelcome(message);
     }
     if (message.post_type === 'message' && message.sub_type === 'normal') {
-      if (message.self_id === message.user_id || CONFIG.blacklist.includes(message.user_id)) {
+      if (CONFIG.botId === message.user_id || CONFIG.blacklist.includes(message.user_id)) {
         // 过滤自己的消息和黑名单的消息
         logger.info(`filtered message, id: ${message.message_id}`);
         return '';
@@ -196,7 +194,7 @@ export class MessageService {
     const answerIndex = message.raw_message.indexOf('答');
     const question = message.raw_message.slice(questionIndex + 1, answerIndex).trim();
     let answer = message.raw_message.slice(answerIndex + 1).trim();
-    const matches = answer.match(/\[CQ:image.*?url=.*?\]/g);
+    const matches = answer.match(/\[CQ:image,file=.*?\]/g);
     if (matches) {
       for (const match of matches) {
         const imageName = `[CQ:image,file=save/${await this.downloadImage(match)}]`;
@@ -250,7 +248,7 @@ export class MessageService {
   private async onThrowSomeone(message: Message) {
     const match = message.raw_message.match(/\[CQ:at,qq=(.*?)]/)!;
     let qq = match[1];
-    if (qq === message.self_id.toString()) {
+    if (qq === CONFIG.botId.toString()) {
       qq = message.user_id.toString();
     }
     const avatar = await this.downloadAvatar(qq);
@@ -260,7 +258,7 @@ export class MessageService {
   private async onPunchSomeone(message: Message) {
     const match = message.raw_message.match(/\[CQ:at,qq=(.*?)]/)!;
     let qq = match[1];
-    if (qq === message.self_id.toString()) {
+    if (qq === CONFIG.botId.toString()) {
       qq = message.user_id.toString();
     }
     const avatar = await this.downloadAvatar(qq);
@@ -459,7 +457,7 @@ export class MessageService {
       if (messages.length >= 2) {
         await RereadMsg.create({
           groupId: message.group_id.toFixed(0),
-          messageId: messages[0].messageId.toFixed(0),
+          messageId: messages[0].messageId,
           content: messages[0].content,
           creator: messages[0].userId.toFixed(0),
           count: messages.length - 1,
@@ -504,12 +502,37 @@ export class MessageService {
   }
 
   private async downloadImage(imageCq: string): Promise<string> {
-    const url = imageCq.match(/url=(.*?)\]/)![1];
-    const res = await axios.get(url, { responseType: 'arraybuffer' });
-    const buffer: Buffer = res.data;
-    const filename = hash(buffer) + '.' + mime.getExtension(res.headers['content-type']);
-    await fs.promises.writeFile(path.resolve(CONFIG.imageUrl, 'save', filename), buffer);
-    return filename;
+    const url = imageCq.match(/file=(.*?)\]/)![1];
+    // const res = await axios.get(url, { responseType: 'arraybuffer' });
+    // const buffer: Buffer = res.data;
+    // const buffer = await fs.promises.readFile(url);
+    // const filename = hash(buffer) + '.' + mime.getExtension(res.headers['content-type']);
+    // await fs.promises.writeFile(path.resolve(CONFIG.imageUrl, 'save', filename), buffer);
+    const filename = path.basename(url);
+    let interval: NodeJS.Timer | undefined = undefined;
+    let imgExists = false;
+    await Promise.race([
+      new Promise((resolve) => setTimeout(resolve, 60 * 1000)),
+      new Promise<void>((resolve) => {
+        interval = setInterval(() => {
+          fs.exists(url, (exists) => {
+            if (exists) {
+              imgExists = true;
+              resolve();
+            }
+          });
+        }, 200);
+      }),
+    ]);
+    if (interval) {
+      clearInterval(interval);
+      interval = undefined;
+    }
+    if (imgExists) {
+      await fs.promises.copyFile(url, path.join(CONFIG.imageUrl, 'save', filename));
+      return filename;
+    }
+    throw new Error('图片下载失败了哟~');
   }
 
   private async downloadAvatar(qq: string): Promise<string> {
@@ -519,8 +542,8 @@ export class MessageService {
     return avatar;
   }
 
-  private recentMessage: number[] = [];
-  private rereadMessage: Record<string, { messageId: number; content: string; userId: number; createdAt: number }[]> =
+  private recentMessage: string[] = [];
+  private rereadMessage: Record<string, { messageId: string; content: string; userId: number; createdAt: number }[]> =
     {};
 }
 
