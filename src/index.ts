@@ -22,7 +22,10 @@ app.post('/notify', async (req, res) => {
     const message = req.body as Message;
     const text = await messageService.handle(message);
     if (text) {
-      await cqService.sendGroupMessage(message.group_id, text);
+      await cqService.sendGroupMessage(
+        message.group_id,
+        text.replaceAll(/CQ:image,file=/gi, `CQ:image,file=${CONFIG.imageUrl}`),
+      );
     }
     res.json({ message: text });
   } catch (e) {

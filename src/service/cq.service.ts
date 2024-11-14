@@ -6,8 +6,8 @@ export class CqService {
   public constructor(private host: string) {}
 
   public async sendGroupMessage(group_id: number, message: string, auto_escape = false) {
-    // console.log({ group_id, message, auto_escape });
     return this.request('/send_group_msg', { group_id, message, auto_escape });
+    // return this.request('/send_msg', { user_id: 308158682, message, auto_escape });
   }
 
   public async listMember(group_id: number | string): Promise<GroupMember[]> {

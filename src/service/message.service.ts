@@ -15,9 +15,9 @@ import { taskService } from './task.service';
 
 export class MessageService {
   public async handle(message: Message): Promise<string> {
-    if (!CONFIG.groupId.includes(message.group_id)) {
-      return '';
-    }
+    // if (!CONFIG.groupId.includes(message.group_id)) {
+    //   return '';
+    // }
 
     if (this.recentMessage.includes(message.message_id)) {
       logger.info(`repeated message, id: ${message.message_id}`);
@@ -33,7 +33,7 @@ export class MessageService {
     if (message.post_type === 'notice' && message.notice_type === 'group_increase') {
       return this.onWelcome(message);
     }
-    if (message.post_type === 'message' && message.sub_type === 'normal') {
+    if (message.post_type === 'message' && ['normal', 'friend'].includes(message.sub_type)) {
       if (CONFIG.botId === message.user_id || CONFIG.blacklist.includes(message.user_id)) {
         // 过滤自己的消息和黑名单的消息
         logger.info(`filtered message, id: ${message.message_id}`);
@@ -202,7 +202,7 @@ export class MessageService {
       }
     }
     await Msg.create({ question, answer, createId: message.user_id });
-    return '[CQ:image,file=img/record.gif]';
+    return `[CQ:image,file=${CONFIG.imageUrl}img/record.gif]`;
   }
 
   private async onQueryQuestion(message: Message) {
@@ -393,7 +393,7 @@ export class MessageService {
     const questions = await Msg.findAll({ where: { question: { [Op.like]: `%${message.raw_message.trim()}%` } } });
     if (questions.length === 0) {
       const answers = ['1.gif', '2.gif', '3.png', '4.png', '5.png'];
-      return `[CQ:image,file=img/buzhidao${answers[Math.floor(Math.random() * answers.length)]}]`;
+      return `[CQ:image,file=${CONFIG.imageUrl}img/buzhidao${answers[Math.floor(Math.random() * answers.length)]}]`;
     }
     const { answers } = questions.reduce(
       (pre, cur) => {
@@ -415,13 +415,14 @@ export class MessageService {
   private async onMsgNoPrefix(message: Message) {
     const questions = (await MsgNoPrefix.findAll()).filter((i) => message.raw_message.includes(i.question));
     const exact = questions.find((i) => i.exact && i.question === message.raw_message);
+    let answer = '';
     if (exact) {
-      return exact.answer;
+      answer = exact.answer;
     }
     if (questions.length > 0) {
-      return questions[Math.floor(Math.random() * questions.length)].answer;
+      answer = questions[Math.floor(Math.random() * questions.length)].answer;
     }
-    return '';
+    return answer;
   }
 
   private async onReread(message: Message) {
